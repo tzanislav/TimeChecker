@@ -56,24 +56,14 @@ app.get('/team-tasks', async (req, res) => {
             );
 
             const task = taskResponse.data.data?.task || null;
-            const taskName = task ? task.name : 'No task';
-
-            if (!task) {
-                // If no task, time tracking is irrelevant
-                results.push({
-                    username,
-                    taskName: 'No Task',
-                    timeSinceLastChange: 'N/A',
-                });
-                continue;
-            }
+            const taskName = task ? task.name : 'No Task';
 
             // Retrieve and update last change details
             const trackedTask = lastChangeTracker.get(memberId) || { taskId: null, timestamp: now };
 
-            if (trackedTask.taskId !== task.id) {
-                // Task has changed
-                lastChangeTracker.set(memberId, { taskId: task.id, timestamp: now });
+            if (trackedTask.taskId !== (task?.id || 'No Task')) {
+                // Task has changed (including to "No Task")
+                lastChangeTracker.set(memberId, { taskId: task?.id || 'No Task', timestamp: now });
             }
 
             const updatedTask = lastChangeTracker.get(memberId);
