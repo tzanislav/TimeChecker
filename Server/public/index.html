@@ -7,6 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            font-size: 12px;
             margin: 20px;
             padding: 0;
             background-color: #f4f4f4;
@@ -15,7 +16,7 @@
             text-align: center;
         }
         table {
-            width: 100%;
+            width: min(100%, 600px);
             border-collapse: collapse;
             margin: 20px 0;
             background-color: #fff;
@@ -23,7 +24,7 @@
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 8px;
             text-align: left;
         }
         th {
@@ -34,7 +35,7 @@
             background-color: #f9f9f9;
         }
         .no-task {
-            background-color: #ffcccc; /* Highlight in light red */
+            background-color: #ffcccc !important ;/* Highlight in light red */
         }
         button {
             margin: 10px 0;
@@ -79,6 +80,8 @@
     </table>
     <script>
         const API_URL = 'http://54.76.118.84:5000/team-tasks'; // Backend endpoint
+        //const API_URL = 'http://localhost:5000/team-tasks'; // Backend endpoint
+
         const table = document.getElementById('taskTable');
         const tableBody = document.getElementById('tableBody');
         const loadingDiv = document.getElementById('loading');
