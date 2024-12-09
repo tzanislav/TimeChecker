@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+const path = require('path');
 const cors = require('cors');
 
 const app = express();
@@ -18,7 +19,7 @@ const formatDuration = (ms) => {
     const seconds = ms / 1000;
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m ${Math.floor(seconds % 60)}s`;
 };
 
 // Enable CORS for the frontend origin
@@ -26,26 +27,30 @@ app.use(cors({
     origin: 'http://127.0.0.1', // Your frontend origin
 }));
 
-// Endpoint to fetch team members and their tasks
-app.get('/team-tasks', async (req, res) => {
+app.get('/tasks', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+// Local state to track last task change
+const lastChangeTracker = new Map();
+
+app.get('/team-tasks', async (req, res) => {
     console.log('Fetching data...');
     try {
-        // Fetch team members
         const teamResponse = await axios.get(
             `https://api.clickup.com/api/v2/team/${TEAM_ID}`,
             { headers }
         );
         const members = teamResponse.data.team.members;
 
-        const results = [];
         const now = Date.now();
+        const results = [];
 
-        // Fetch tasks for each member
         for (const member of members) {
             const memberId = member.user.id;
             const username = member.user.username;
 
+            // Fetch current task for the member
             const taskResponse = await axios.get(
                 `https://api.clickup.com/api/v2/team/${TEAM_ID}/time_entries/current`,
                 { headers, params: { assignee: memberId } }
@@ -53,13 +58,22 @@ app.get('/team-tasks', async (req, res) => {
 
             const task = taskResponse.data.data?.task || null;
             const taskName = task ? task.name : 'No task';
-            const lastChangeTime = task ? now : now - 3600000; // Default to 1 hour ago
-            const timeSinceLastChange = now - lastChangeTime;
+
+            // Retrieve and update last change details
+            const trackedTask = lastChangeTracker.get(memberId) || { taskId: null, timestamp: now };
+
+            if (!task || trackedTask.taskId !== task.id) {
+                // Task changed or no current task
+                lastChangeTracker.set(memberId, { taskId: task?.id || null, timestamp: now });
+            }
+
+            const updatedTask = lastChangeTracker.get(memberId);
+            const timeSinceLastChange = now - updatedTask.timestamp;
 
             results.push({
                 username,
                 taskName,
-                timeSinceLastChange: formatDuration(timeSinceLastChange)
+                timeSinceLastChange: formatDuration(timeSinceLastChange),
             });
         }
 
