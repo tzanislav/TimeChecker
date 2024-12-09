@@ -33,6 +33,9 @@
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
+        .no-task {
+            background-color: #ffcccc; /* Highlight in light red */
+        }
         button {
             margin: 10px 0;
             padding: 10px 20px;
@@ -105,6 +108,10 @@
                 // Populate table with new data
                 data.forEach(member => {
                     const row = document.createElement('tr');
+                    // Highlight row if the task is "No Task"
+                    if (member.taskName === 'No Task') {
+                        row.classList.add('no-task');
+                    }
                     row.innerHTML = `
                         <td>${member.username}</td>
                         <td>${member.taskName}</td>
