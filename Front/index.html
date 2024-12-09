@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Members Task Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        button {
+            margin: 10px 0;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Team Members Task Status</h1>
+    <button id="refreshButton">Refresh</button>
+    <div id="loading" class="loading">Loading data...</div>
+    <table id="taskTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Current Task</th>
+                <th>Time Since Change</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    <script>
+        const API_URL = 'http://localhost:5000/team-tasks'; // Backend endpoint
+        const table = document.getElementById('taskTable');
+        const tableBody = document.getElementById('tableBody');
+        const loadingDiv = document.getElementById('loading');
+        const refreshButton = document.getElementById('refreshButton');
+
+        async function fetchData() {
+            // Clear previous data and show loading
+            table.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                
+
+                // Clear previous table rows
+                tableBody.innerHTML = '';
+
+                // Populate table with new data
+                data.forEach(member => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${member.username}</td>
+                        <td>${member.taskName}</td>
+                        <td>${member.timeSinceLastChange}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Show table and hide loading message
+                table.style.display = 'table';
+                loadingDiv.style.display = 'none';
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                loadingDiv.textContent = 'Failed to load data. Please try again.';
+            }
+        }
+
+        // Refresh button click handler
+        refreshButton.addEventListener('click', fetchData);
+
+        // Initial data load
+        fetchData();
+    </script>
+</body>
+</html>
