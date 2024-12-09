@@ -23,7 +23,7 @@ const formatDuration = (ms) => {
 
 // Enable CORS for the frontend origin
 app.use(cors({
-    origin: 'http://127.0.0.1:5500', // Your frontend origin
+    origin: 'http://127.0.0.1', // Your frontend origin
 }));
 
 // Endpoint to fetch team members and their tasks
