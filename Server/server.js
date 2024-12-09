@@ -19,7 +19,7 @@ const formatDuration = (ms) => {
     const seconds = ms / 1000;
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m ${Math.floor(seconds % 60)}s`;
+    return `${hours}h ${minutes}m`;
 };
 
 // Enable CORS for the frontend origin
@@ -31,8 +31,7 @@ app.get('/tasks', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Local state to track last task change
-const lastChangeTracker = new Map();
+const lastChangeTracker = new Map(); // Tracks task changes locally
 
 app.get('/team-tasks', async (req, res) => {
     console.log('Fetching data...');
@@ -59,12 +58,22 @@ app.get('/team-tasks', async (req, res) => {
             const task = taskResponse.data.data?.task || null;
             const taskName = task ? task.name : 'No task';
 
+            if (!task) {
+                // If no task, time tracking is irrelevant
+                results.push({
+                    username,
+                    taskName: 'No Task',
+                    timeSinceLastChange: 'N/A',
+                });
+                continue;
+            }
+
             // Retrieve and update last change details
             const trackedTask = lastChangeTracker.get(memberId) || { taskId: null, timestamp: now };
 
-            if (!task || trackedTask.taskId !== task.id) {
-                // Task changed or no current task
-                lastChangeTracker.set(memberId, { taskId: task?.id || null, timestamp: now });
+            if (trackedTask.taskId !== task.id) {
+                // Task has changed
+                lastChangeTracker.set(memberId, { taskId: task.id, timestamp: now });
             }
 
             const updatedTask = lastChangeTracker.get(memberId);
@@ -83,6 +92,7 @@ app.get('/team-tasks', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 //Test the server
 app.get('/', (req, res) => {
