@@ -33,8 +33,8 @@ app.get('/tasks', (req, res) => {
 
 const lastChangeTracker = new Map(); // Tracks task changes locally
 
-app.get('/team-tasks', async (req, res) => {
-    console.log('Fetching data...');
+async function updateTaskChanges() {
+    console.log('Updating task changes...');
     try {
         const teamResponse = await axios.get(
             `https://api.clickup.com/api/v2/team/${TEAM_ID}`,
@@ -43,11 +43,9 @@ app.get('/team-tasks', async (req, res) => {
         const members = teamResponse.data.team.members;
 
         const now = Date.now();
-        const results = [];
 
         for (const member of members) {
             const memberId = member.user.id;
-            const username = member.user.username;
 
             // Fetch current task for the member
             const taskResponse = await axios.get(
@@ -56,7 +54,6 @@ app.get('/team-tasks', async (req, res) => {
             );
 
             const task = taskResponse.data.data?.task || null;
-            const taskName = task ? task.name : 'No Task';
 
             // Retrieve and update last change details
             const trackedTask = lastChangeTracker.get(memberId) || { taskId: null, timestamp: now };
@@ -64,25 +61,40 @@ app.get('/team-tasks', async (req, res) => {
             if (trackedTask.taskId !== (task?.id || 'No Task')) {
                 // Task has changed (including to "No Task")
                 lastChangeTracker.set(memberId, { taskId: task?.id || 'No Task', timestamp: now });
+                console.log(`Task updated for ${member.user.username}: ${task?.name || 'No Task'}`);
             }
-
-            const updatedTask = lastChangeTracker.get(memberId);
-            const timeSinceLastChange = now - updatedTask.timestamp;
-
-            results.push({
-                username,
-                taskName,
-                timeSinceLastChange: formatDuration(timeSinceLastChange),
-            });
         }
-
-        res.json(results);
     } catch (error) {
-        console.error('Error fetching data:', error.response?.data || error.message);
-        res.status(500).send('Server error');
+        console.error('Error updating task changes:', error.response?.data || error.message);
     }
+}
+
+// Schedule periodic updates
+setInterval(updateTaskChanges, 60000); // Update every minute
+
+// Endpoint to fetch team task data
+app.get('/team-tasks', (req, res) => {
+    const now = Date.now();
+    const results = [];
+
+    // Prepare the response based on the latest task tracker
+    for (const [memberId, { taskId, timestamp }] of lastChangeTracker.entries()) {
+        const member = Array.from(lastChangeTracker.keys()).find(member => member.user.id === memberId);
+        const taskName = taskId === 'No Task' ? 'No Task' : 'Task Name';
+        const timeSinceLastChange = now - timestamp;
+
+        results.push({
+            username: member.user.username,
+            taskName,
+            timeSinceLastChange: formatDuration(timeSinceLastChange),
+        });
+    }
+
+    res.json(results);
 });
 
+// Start the initial task update
+updateTaskChanges();
 
 //Test the server
 app.get('/', (req, res) => {
