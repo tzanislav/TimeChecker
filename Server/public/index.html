@@ -61,7 +61,7 @@
 </head>
 <body>
     <h1>Team Members Task Status</h1>
-    <button id="refreshButton">Refresh</button>
+    <button id="refreshButton">Refresh (Next in 300s)</button>
     <div id="loading" class="loading">Loading data...</div>
     <div id="errorMessage" class="error" style="display: none;">Failed to load data. Please try again.</div>
     <table id="taskTable" style="display: none;">
@@ -82,8 +82,12 @@
         const errorDiv = document.getElementById('errorMessage');
         const refreshButton = document.getElementById('refreshButton');
 
+        let countdown = 300; // 5 minutes in seconds
+        let intervalId; // ID for the interval controlling the countdown
+        let autoRefreshId; // ID for the automatic refresh interval
+
+        // Fetch data from the server
         async function fetchData() {
-            // Reset UI states
             table.style.display = 'none';
             loadingDiv.style.display = 'block';
             errorDiv.style.display = 'none';
@@ -109,7 +113,6 @@
                     tableBody.appendChild(row);
                 });
 
-                // Show table and hide loading message
                 table.style.display = 'table';
                 loadingDiv.style.display = 'none';
             } catch (error) {
@@ -120,11 +123,37 @@
             }
         }
 
-        // Refresh button click handler
-        refreshButton.addEventListener('click', fetchData);
+        // Countdown timer
+        function startCountdown() {
+            clearInterval(intervalId); // Clear any existing interval
+            countdown = 300; // Reset countdown to 5 minutes
+            intervalId = setInterval(() => {
+                refreshButton.textContent = `Refresh (Next in ${countdown}s)`;
+                if (countdown <= 0) {
+                    clearInterval(intervalId);
+                    fetchData(); // Automatically refresh data
+                    startCountdown(); // Restart countdown
+                }
+                countdown--;
+            }, 1000);
+        }
 
-        // Initial data load
+        // Automatic refresh every 5 minutes
+        function startAutoRefresh() {
+            clearInterval(autoRefreshId); // Clear any existing interval
+            autoRefreshId = setInterval(fetchData, 300000); // 5 minutes in milliseconds
+        }
+
+        // Refresh button click handler
+        refreshButton.addEventListener('click', () => {
+            fetchData();
+            startCountdown(); // Restart the countdown
+        });
+
+        // Initial data load and start timers
         fetchData();
+        startCountdown();
+        startAutoRefresh();
     </script>
 </body>
 </html>
