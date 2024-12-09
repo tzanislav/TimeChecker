@@ -73,26 +73,35 @@ async function updateTaskChanges() {
 setInterval(updateTaskChanges, 60000); // Update every minute
 
 // Endpoint to fetch team task data
-app.get('/team-tasks', (req, res) => {
+app.get('/team-tasks', async (req, res) => {
     const now = Date.now();
     const results = [];
 
-    // Prepare the response based on the latest task tracker
-    for (const [memberId, { taskId, timestamp }] of lastChangeTracker.entries()) {
-        const member = Array.from(lastChangeTracker.keys()).find(member => member.user.id === memberId);
-        const taskName = taskId === 'No Task' ? 'No Task' : 'Task Name';
-        const timeSinceLastChange = now - timestamp;
+    try {
+        const teamResponse = await axios.get(
+            `https://api.clickup.com/api/v2/team/${TEAM_ID}`,
+            { headers }
+        );
+        const members = teamResponse.data.team.members;
 
-        results.push({
-            username: member.user.username,
-            taskName,
-            timeSinceLastChange: formatDuration(timeSinceLastChange),
-        });
+        for (const member of members) {
+            const trackedTask = lastChangeTracker.get(member.user.id) || { taskId: null, timestamp: now };
+            const taskName = trackedTask.taskId === 'No Task' ? 'No Task' : 'Some Task Name'; // Replace with real task logic
+            const timeSinceLastChange = now - trackedTask.timestamp;
+
+            results.push({
+                username: member.user.username,
+                taskName,
+                timeSinceLastChange: formatDuration(timeSinceLastChange),
+            });
+        }
+
+        res.json(results);
+    } catch (error) {
+        console.error('Error fetching data:', error.response?.data || error.message);
+        res.status(500).send('Server error');
     }
-
-    res.json(results);
 });
-
 // Start the initial task update
 updateTaskChanges();
 
