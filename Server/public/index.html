@@ -87,7 +87,7 @@
         <thead>
             <tr>
                 <th>Username</th>
-                <th>Movement</th>
+                <th>Latest Movement</th>
                 <th>Timestamp</th>
             </tr>
         </thead>
@@ -95,6 +95,21 @@
             <!-- Data will be populated here -->
         </tbody>
     </table>
+    <div id="userLog" style="display: none;">
+        <h2 id="userLogTitle"></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Movement</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="userLogTableBody">
+                <!-- User-specific logs will be populated here -->
+            </tbody>
+        </table>
+        <button onclick="goBack()">Go Back</button>
+    </div>
 
     <script>
         const API_URL = 'http://54.76.118.84:5000/team-tasks'; // Backend endpoint
@@ -190,20 +205,57 @@
                 const tableBody = document.getElementById('logsTableBody');
                 tableBody.innerHTML = ''; // Clear existing rows
 
+                // Extract the latest log for each user
                 Object.entries(logs).forEach(([username, userLogs]) => {
-                    userLogs.forEach(log => {
+                    if (userLogs.length > 0) {
+                        const latestLog = userLogs[userLogs.length - 1];
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${username}</td>
-                            <td>${log.movement}</td>
-                            <td>${new Date(log.timestamp).toLocaleString()}</td>
+                            <td><a onclick="fetchUserLog('${username}')">${username}</a></td>
+                            <td>${latestLog.movement}</td>
+                            <td>${new Date(latestLog.timestamp).toLocaleString()}</td>
                         `;
                         tableBody.appendChild(row);
-                    });
+                    }
                 });
             } catch (error) {
                 console.error('Error fetching logs:', error);
             }
+        }
+
+        async function fetchUserLog(username) {
+            try {
+                const response = await fetch(`/logs/${username}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user logs');
+                }
+
+                const userLogs = await response.json();
+                const userLogTitle = document.getElementById('userLogTitle');
+                const userLogTableBody = document.getElementById('userLogTableBody');
+
+                userLogTitle.innerText = `Logs for ${username}`;
+                userLogTableBody.innerHTML = ''; // Clear existing rows
+
+                userLogs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${log.movement}</td>
+                        <td>${new Date(log.timestamp).toLocaleString()}</td>
+                    `;
+                    userLogTableBody.appendChild(row);
+                });
+
+                document.querySelector('table').style.display = 'none';
+                document.getElementById('userLog').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching user logs:', error);
+            }
+        }
+
+        function goBack() {
+            document.querySelector('table').style.display = 'table';
+            document.getElementById('userLog').style.display = 'none';
         }
 
 

@@ -154,4 +154,9 @@ app.get('/logs', (req, res) => {
     res.json(userLogs);
 });
 
+app.get('/logs/:username', (req, res) => {
+    const { username } = req.params;
+    res.json(userLogs[username] || []);
+});
+
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
