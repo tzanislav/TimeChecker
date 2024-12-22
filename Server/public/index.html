@@ -78,6 +78,24 @@
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
+
+
+    <!-------------------------------------Logs-->
+
+    <h1>Logs</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Movement</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="logsTableBody">
+            <!-- Data will be populated here -->
+        </tbody>
+    </table>
+
     <script>
         const API_URL = 'http://54.76.118.84:5000/team-tasks'; // Backend endpoint
         //const API_URL = 'http://localhost:5000/team-tasks'; // Backend endpoint
@@ -142,6 +160,7 @@
                 if (countdown <= 0) {
                     clearInterval(intervalId);
                     fetchData(); // Automatically refresh data
+                    fetchLogs(); // Fetch logs
                     startCountdown(); // Restart countdown
                 }
                 countdown--;
@@ -160,10 +179,39 @@
             startCountdown(); // Restart the countdown
         });
 
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/logs');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch logs');
+                }
+
+                const logs = await response.json();
+                const tableBody = document.getElementById('logsTableBody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                Object.entries(logs).forEach(([username, userLogs]) => {
+                    userLogs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${username}</td>
+                            <td>${log.movement}</td>
+                            <td>${new Date(log.timestamp).toLocaleString()}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+
         // Initial data load and start timers
         fetchData();
         startCountdown();
         startAutoRefresh();
+        window.onload = fetchLogs;
     </script>
 </body>
 </html>

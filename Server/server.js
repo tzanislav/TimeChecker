@@ -6,6 +6,12 @@ const cors = require('cors');
 const app = express();
 const PORT = 5000;
 
+// Store activity logs
+const userLogs = {};
+
+// Time to keep logs (7 days 8 hours in milliseconds)
+const LOG_EXPIRY = 7 * 24 * 60 * 60 * 1000;
+
 app.use(cors({
     origin: 'http://127.0.0.1', // Frontend origin
 }));
@@ -67,6 +73,7 @@ async function updateTaskChanges() {
     }
 }
 
+app.use(express.json());
 // Endpoint to fetch team task data
 app.get('/team-tasks', async (req, res) => {
     const now = Date.now();
@@ -114,6 +121,37 @@ app.get('/', (req, res) => {
 
 app.get('/tasks', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.post('/logtime', (req, res) => {
+    const { username, movement } = req.body;
+
+    if (!username || !movement) {
+        return res.status(400).send('Invalid data');
+    }
+
+    const now = Date.now();
+
+    // Ensure there's an array for this user
+    if (!userLogs[username]) {
+        userLogs[username] = [];
+    }
+
+    // Add the new log
+    if (movement > 50) {
+        userLogs[username].push({ movement, timestamp: now });
+    }
+
+    // Clean up logs older than 8 hours
+    userLogs[username] = userLogs[username].filter(log => now - log.timestamp <= LOG_EXPIRY);
+
+    console.log(`Activity logged for ${username}: Movement ${movement}, Timestamp: ${now}`);
+    res.send('Log received');
+});
+
+// Example route to view logs (for debugging purposes)
+app.get('/logs', (req, res) => {
+    res.json(userLogs);
 });
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
