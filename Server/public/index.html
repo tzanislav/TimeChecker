@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Members Task Status</title>
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Team Members Task Status</title>
+        <style>
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
@@ -62,56 +62,56 @@
             margin-top: 20px;
         }
     </style>
-</head>
-<body>
-    <h1>Team Members Task Status</h1>
-    <button id="refreshButton">Refresh (Next in 300s)</button>
-    <div id="loading" class="loading">Loading data...</div>
-    <div id="errorMessage" class="error" style="display: none;">Failed to load data. Please try again.</div>
-    <table id="taskTable" style="display: none;">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Current Task</th>
-                <th>Time Since Change</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    </head>
+    <body>
+        <h1>Team Members Task Status</h1>
+        <button id="refreshButton">Refresh (Next in 300s)</button>
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="errorMessage" class="error" style="display: none;">Failed to
+            load data. Please try again.</div>
+        <table id="taskTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Current Task</th>
+                    <th>Time Since Change</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
 
+        <!-------------------------------------Logs-->
 
-    <!-------------------------------------Logs-->
-
-    <h1>Logs</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Latest Movement</th>
-                <th>Timestamp</th>
-            </tr>
-        </thead>
-        <tbody id="logsTableBody">
-            <!-- Data will be populated here -->
-        </tbody>
-    </table>
-    <div id="userLog" style="display: none;">
-        <h2 id="userLogTitle"></h2>
+        <h1>Logs</h1>
         <table>
             <thead>
                 <tr>
-                    <th>Movement</th>
+                    <th>Username</th>
+                    <th>Latest Movement</th>
                     <th>Timestamp</th>
                 </tr>
             </thead>
-            <tbody id="userLogTableBody">
-                <!-- User-specific logs will be populated here -->
+            <tbody id="logsTableBody">
+                <!-- Data will be populated here -->
             </tbody>
         </table>
-        <button onclick="goBack()">Go Back</button>
-    </div>
+        <div id="userLog" style="display: none;">
+            <h2 id="userLogTitle"></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Movement</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="userLogTableBody">
+                    <!-- User-specific logs will be populated here -->
+                </tbody>
+            </table>
+            <button onclick="goBack()">Go Back</button>
+        </div>
 
-    <script>
+        <script>
         const API_URL = 'http://54.76.118.84:5000/team-tasks'; // Backend endpoint
         //const API_URL = 'http://localhost:5000/team-tasks'; // Backend endpoint
 
@@ -224,34 +224,38 @@
         }
 
         async function fetchUserLog(username) {
-            try {
-                const response = await fetch(`/logs/${username}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch user logs');
-                }
-
-                const userLogs = await response.json();
-                const userLogTitle = document.getElementById('userLogTitle');
-                const userLogTableBody = document.getElementById('userLogTableBody');
-
-                userLogTitle.innerText = `Logs for ${username}`;
-                userLogTableBody.innerHTML = ''; // Clear existing rows
-
-                userLogs.forEach(log => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${log.movement}</td>
-                        <td>${new Date(log.timestamp).toLocaleString()}</td>
-                    `;
-                    userLogTableBody.appendChild(row);
-                });
-
-                document.querySelector('table').style.display = 'none';
-                document.getElementById('userLog').style.display = 'block';
-            } catch (error) {
-                console.error('Error fetching user logs:', error);
-            }
+    try {
+        const response = await fetch(`/logs/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user logs');
         }
+
+        const userLogs = await response.json();
+
+        // Sort logs by timestamp (newest first)
+        userLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+        const userLogTitle = document.getElementById('userLogTitle');
+        const userLogTableBody = document.getElementById('userLogTableBody');
+
+        userLogTitle.innerText = `Logs for ${username}`;
+        userLogTableBody.innerHTML = ''; // Clear existing rows
+
+        userLogs.forEach(log => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${log.movement}</td>
+                <td>${new Date(log.timestamp).toLocaleString()}</td>
+            `;
+            userLogTableBody.appendChild(row);
+        });
+
+        document.querySelector('table').style.display = 'none';
+        document.getElementById('userLog').style.display = 'block';
+    } catch (error) {
+        console.error('Error fetching user logs:', error);
+    }
+}
 
         function goBack() {
             document.querySelector('table').style.display = 'table';
@@ -265,5 +269,5 @@
         startAutoRefresh();
         window.onload = fetchLogs;
     </script>
-</body>
+    </body>
 </html>
