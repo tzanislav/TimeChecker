@@ -258,7 +258,7 @@ userLogs.forEach((log, index) => {
         differenceInMinutes = `${Math.floor(differenceInMinutes / 60)} hour(s) and ${differenceInMinutes % 60}`;
     }
 
-    let timeSinceLastLog = `${differenceInMinutes} minute(s) ago`;
+    let timeSinceLastLog = `${differenceInMinutes} minute(s)`;
 
     row.innerHTML = `
         <td>${log.movement}</td>
