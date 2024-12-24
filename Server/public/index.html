@@ -241,14 +241,26 @@
         userLogTitle.innerText = `Logs for ${username}`;
         userLogTableBody.innerHTML = ''; // Clear existing rows
 
-        userLogs.forEach(log => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${log.movement}</td>
-                <td>${new Date(log.timestamp).toLocaleString()}</td>
-            `;
-            userLogTableBody.appendChild(row);
-        });
+   
+userLogs.forEach((log, index) => {
+    const row = document.createElement('tr');
+
+    // Calculate the time difference with the previous log
+    let timeSinceLastLog = 'N/A'; // For the first log
+    if (index > 0) {
+        const previousLog = userLogs[index - 1];
+        const differenceInMilliseconds = log.timestamp - previousLog.timestamp;
+        const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));
+        timeSinceLastLog = `${differenceInMinutes} minute(s) ago`;
+    }
+
+    row.innerHTML = `
+        <td>${log.movement}</td>
+        <td>${new Date(log.timestamp).toLocaleString()}</td>
+        <td>${timeSinceLastLog}</td>
+    `;
+    userLogTableBody.appendChild(row);
+});
 
         document.querySelector('table').style.display = 'none';
         document.getElementById('userLog').style.display = 'block';
