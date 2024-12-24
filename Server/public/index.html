@@ -251,7 +251,7 @@ userLogs.forEach((log, index) => {
     if (index > 0) {
         const previousLog = userLogs[index - 1];
         const differenceInMilliseconds = log.timestamp - previousLog.timestamp;
-        const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));    
+        differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));    
     }
     differenceInMinutes = Math.abs(differenceInMinutes);
     if(differenceInMinutes > 60) {
