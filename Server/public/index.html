@@ -246,13 +246,15 @@ userLogs.forEach((log, index) => {
     const row = document.createElement('tr');
 
     // Calculate the time difference with the previous log
-    let timeSinceLastLog = 'N/A'; // For the first log
+    const differenceInMinutes = Math.floor((Date.now() - log.timestamp) / (1000 * 60));
+
     if (index > 0) {
         const previousLog = userLogs[index - 1];
         const differenceInMilliseconds = log.timestamp - previousLog.timestamp;
-        const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));
-        timeSinceLastLog = `${differenceInMinutes} minute(s) ago`;
+        const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));    
     }
+    differenceInMinutes = Math.abs(differenceInMinutes);
+    let timeSinceLastLog = `${differenceInMinutes} minute(s) ago`;
 
     row.innerHTML = `
         <td>${log.movement}</td>
