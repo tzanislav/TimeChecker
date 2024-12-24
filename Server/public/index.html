@@ -255,7 +255,7 @@ userLogs.forEach((log, index) => {
     }
     differenceInMinutes = Math.abs(differenceInMinutes);
     if(differenceInMinutes > 60) {
-        differenceInMinutes = `${Math.floor(differenceInMinutes / 60)} hour(s) and ${differenceInMinutes % 60} min ago`;
+        differenceInMinutes = `${Math.floor(differenceInMinutes / 60)} hour(s) and ${differenceInMinutes % 60}`;
     }
 
     let timeSinceLastLog = `${differenceInMinutes} minute(s) ago`;
