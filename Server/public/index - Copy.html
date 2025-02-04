@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Team Members Task Status</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: min(100%, 600px);
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .no-task {
+            background-color: #ffcccc !important ;/* Highlight in light red */
+        }
+        button {
+            margin: 10px 0;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+        .error {
+            text-align: center;
+            color: red;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+    </head>
+    <body>
+        <h1>Team Members Task Status</h1>
+        <button id="refreshButton">Refresh (Next in 300s)</button>
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="errorMessage" class="error" style="display: none;">Failed to
+            load data. Please try again.</div>
+        <table id="taskTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Current Task</th>
+                    <th>Time Since Change</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+        <!-------------------------------------Logs-->
+
+        <h1>Logs</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Latest Movement</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+        <div id="userLog" style="display: none;">
+            <h2 id="userLogTitle"></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Movement</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="userLogTableBody">
+                    <!-- User-specific logs will be populated here -->
+                </tbody>
+            </table>
+            <button onclick="goBack()">Go Back</button>
+        </div>
+
+        <script>
+        const API_URL = 'http://54.76.118.84:5000/team-tasks'; // Backend endpoint
+        //const API_URL = 'http://localhost:5000/team-tasks'; // Backend endpoint
+
+        const table = document.getElementById('taskTable');
+        const tableBody = document.getElementById('tableBody');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('errorMessage');
+        const refreshButton = document.getElementById('refreshButton');
+
+        let countdown = 300; // 5 minutes in seconds
+        let intervalId; // ID for the interval controlling the countdown
+        let autoRefreshId; // ID for the automatic refresh interval
+
+        // Fetch data from the server
+        async function fetchData() {
+            table.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Clear previous table rows
+                tableBody.innerHTML = '';
+
+                // Populate table with new data
+                data.forEach(member => {
+                    const row = document.createElement('tr');
+                    // Highlight row if the task is "No Task"
+                    if (member.taskName === 'No Task') {
+                        row.classList.add('no-task');
+                    }
+                    row.innerHTML = `
+                        <td>${member.username}</td>
+                        <td>${member.taskName}</td>
+                        <td>${member.timeSinceLastChange}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                table.style.display = 'table';
+                loadingDiv.style.display = 'none';
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Failed to load data. Please try again.';
+            }
+        }
+
+        // Countdown timer
+        function startCountdown() {
+            clearInterval(intervalId); // Clear any existing interval
+            countdown = 300; // Reset countdown to 5 minutes
+            intervalId = setInterval(() => {
+                refreshButton.textContent = `Refresh (Next in ${countdown}s)`;
+                if (countdown <= 0) {
+                    clearInterval(intervalId);
+                    fetchData(); // Automatically refresh data
+                    fetchLogs(); // Fetch logs
+                    startCountdown(); // Restart countdown
+                }
+                countdown--;
+            }, 1000);
+        }
+
+        // Automatic refresh every 5 minutes
+        function startAutoRefresh() {
+            clearInterval(autoRefreshId); // Clear any existing interval
+            autoRefreshId = setInterval(fetchData, 300000); // 5 minutes in milliseconds
+        }
+
+        // Refresh button click handler
+        refreshButton.addEventListener('click', () => {
+            fetchData();
+            startCountdown(); // Restart the countdown
+        });
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/logs');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch logs');
+                }
+
+                const logs = await response.json();
+                const tableBody = document.getElementById('logsTableBody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                // Extract the latest log for each user
+                Object.entries(logs).forEach(([username, userLogs]) => {
+                    if (userLogs.length > 0) {
+                        const latestLog = userLogs[userLogs.length - 1];
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><a onclick="fetchUserLog('${username}')">${username}</a></td>
+                            <td>${latestLog.movement}</td>
+                            <td>${new Date(latestLog.timestamp).toLocaleString()}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        async function fetchUserLog(username) {
+    try {
+        const response = await fetch(`/logs/${username}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user logs');
+        }
+
+        const userLogs = await response.json();
+
+        // Sort logs by timestamp (newest first)
+        userLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+        const userLogTitle = document.getElementById('userLogTitle');
+        const userLogTableBody = document.getElementById('userLogTableBody');
+
+        userLogTitle.innerText = `Logs for ${username}`;
+        userLogTableBody.innerHTML = ''; // Clear existing rows
+
+   
+userLogs.forEach((log, index) => {
+    const row = document.createElement('tr');
+
+    // Calculate the time difference with the previous log
+    var differenceInMinutes = Math.floor((Date.now() - log.timestamp) / (1000 * 60));
+
+    if (index > 0) {
+        const previousLog = userLogs[index - 1];
+        const differenceInMilliseconds = log.timestamp - previousLog.timestamp;
+        differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));    
+    }
+    differenceInMinutes = Math.abs(differenceInMinutes);
+    if(differenceInMinutes > 60) {
+        differenceInMinutes = `${Math.floor(differenceInMinutes / 60)} hour(s) and ${differenceInMinutes % 60}`;
+    }
+
+    let timeSinceLastLog = `${differenceInMinutes} minute(s)`;
+
+    row.innerHTML = `
+        <td>${log.movement}</td>
+        <td>${new Date(log.timestamp).toLocaleString()}</td>
+        <td>${timeSinceLastLog}</td>
+    `;
+    userLogTableBody.appendChild(row);
+});
+
+        document.querySelector('table').style.display = 'none';
+        document.getElementById('userLog').style.display = 'block';
+    } catch (error) {
+        console.error('Error fetching user logs:', error);
+    }
+}
+
+        function goBack() {
+            document.querySelector('table').style.display = 'table';
+            document.getElementById('userLog').style.display = 'none';
+        }
+
+
+        // Initial data load and start timers
+        fetchData();
+        startCountdown();
+        startAutoRefresh();
+        window.onload = fetchLogs;
+    </script>
+    </body>
+</html>
