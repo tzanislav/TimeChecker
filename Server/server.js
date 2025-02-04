@@ -12,9 +12,13 @@ const userLogs = {};
 // Time to keep logs (7 days 8 hours in milliseconds)
 const LOG_EXPIRY = 7 * 24 * 60 * 60 * 1000;
 
+/*
 app.use(cors({
-    origin: 'http://127.0.0.1', // Frontend origin
+    origin: [/^http:\/\/127\.0\.0\.1:\d+$/, /^http:\/\/192\.\d+\.\d+\.\d+:\d+$/], // Frontend origins on any port
 }));
+*/
+app.use(cors());
+
 
 
 // API credentials
@@ -89,6 +93,7 @@ app.get('/team-tasks', async (req, res) => {
         for (const member of members) {
             const memberId = member.user.id;
             const username = member.user.username;
+            const profilePicture = member.user.profilePicture
 
             // Retrieve task data from the tracker
             const trackedTask = lastChangeTracker.get(memberId) || { taskName: 'No Task', timestamp: now };
@@ -98,6 +103,7 @@ app.get('/team-tasks', async (req, res) => {
                 username,
                 taskName: trackedTask.taskName, // Use the task name
                 timeSinceLastChange: formatDuration(timeSinceLastChange),
+                profilePicture
             });
         }
 
@@ -142,7 +148,7 @@ app.post('/logtime', (req, res) => {
         userLogs[username].push({ movement, timestamp: now });
     }
 
-    // Clean up logs older than 8 hours
+    // Clean up logs older than 7 hours
     userLogs[username] = userLogs[username].filter(log => now - log.timestamp <= LOG_EXPIRY);
 
     console.log(`Activity logged for ${username}: Movement ${movement}, Timestamp: ${now}`);
@@ -157,6 +163,7 @@ app.get('/logs', (req, res) => {
 app.get('/logs/:username', (req, res) => {
     const { username } = req.params;
     res.json(userLogs[username] || []);
+    console.log(`Logs requested for ${username}`);
 });
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
